@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PEA Buachet - Communication Inspection</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- เพิ่ม Library สำหรับแปลงไฟล์ HEIC จาก iPhone -->
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     body { 
@@ -51,6 +53,7 @@
       width: 100%; transition: 0.4s; box-shadow: 0 10px 20px rgba(118, 75, 162, 0.3);
     }
     .btn-gradient:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(118, 75, 162, 0.4); opacity: 0.9; }
+    .btn-gradient:disabled { opacity: 0.6; transform: none; cursor: not-allowed; }
     .rainbow-border { border: 2px dashed #cbd5e0; background: rgba(255,255,255,0.5); }
   </style>
 </head>
@@ -59,7 +62,7 @@
 <div class="glass-card max-w-2xl mx-auto p-6 md:p-10">
   <header class="text-center mb-8">
     <h1 class="text-2xl font-black text-gray-800 tracking-tight">📝  ระบบจัดเก็บข้อมูลสายสื่อสาร</h1>
-    <p class="text-blue-500 font-bold text-sm">บันทึกข้อมูลและภาพถ่ายพร้อมพิกัด (External Source)</p>
+    <p class="text-blue-500 font-bold text-sm">บันทึกข้อมูลและภาพถ่ายพร้อมพิกัด</p>
   </header>
 
   <form id="inspectionForm" class="space-y-5">
@@ -74,8 +77,8 @@
         </select>
       </div>
       <div>
-        <label class="field-label">🛣️ เส้นทาง สถานที่+(ละเมิด ชื่อบริษัท/พ.ศ.) </label>
-        <input type="text" name="route" class="input-box" placeholder="บ.หมื่นสังข์ ต.บัวเชด +(ละเมิด TTT/69)" required>
+        <label class="field-label">🛣️ เส้นทาง สถานที่+(ชื่อบริษัท/พ.ศ.) </label>
+        <input type="text" name="route" id="route" class="input-box" placeholder="บ.หมื่นสังข์ ต.บัวเชด+TTT/69" required>
       </div>
     </div>
 
@@ -86,7 +89,7 @@
       </div>
       <div>
         <label class="field-label">🏢 บริษัทเจ้าของสาย</label>
-        <input type="text" name="owner" class="input-box" placeholder="TRUE / NT / AIS" required>
+        <input type="text" name="owner" id="owner" class="input-box" placeholder="TRUE / NT / AIS" required>
       </div>
     </div>
 
@@ -110,39 +113,47 @@
     <div class="grid grid-cols-3 gap-3 bg-white/50 p-4 rounded-2xl border border-white">
       <div>
         <label class="field-label text-[13px] text-center">📏 เส้นผ่าศูนย์กลาง(มม.)</label>
-        <input type="text" name="diameter" class="input-box text-center" placeholder="0.00">
+        <input type="text" name="diameter" id="diameter" class="input-box text-center" placeholder="0.00">
       </div>
       <div>
         <label class="field-label text-[13px] text-center">🔢 จำนวนเส้น</label>
-        <input type="text" name="quantity" class="input-box text-center" placeholder="0">
+        <input type="text" name="quantity" id="quantity" class="input-box text-center" placeholder="0">
       </div>
       <div>
         <label class="field-label text-[13px] text-center">🔌 จำนวนคอร์ (Core)</label>
-        <input type="text" name="coreCount" class="input-box text-center" placeholder="0">
+        <input type="text" name="coreCount" id="coreCount" class="input-box text-center" placeholder="0">
       </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
       <div class="p-4 rainbow-border rounded-2xl text-center">
         <label class="field-label text-purple-600">📸 ภาพถ่ายที่ 1</label>
-        <input type="file" id="file1" accept="image/*" capture="camera" class="text-xs w-full mt-2" required>
-        <div id="pre1" class="hidden mt-3 rounded-lg overflow-hidden border-2 border-white shadow-md"><img id="img1" class="w-full"></div>
+        <!-- เพิ่ม accept ให้ครอบคลุม heic -->
+        <input type="file" id="file1" accept="image/*,image/heic,image/heif" class="text-xs w-full mt-2" required>
+        <div id="pre1" class="hidden mt-3 rounded-lg overflow-hidden border-2 border-white shadow-md">
+          <img id="img1" class="w-full" src="">
+        </div>
       </div>
       <div class="p-4 rainbow-border rounded-2xl text-center">
         <label class="field-label text-blue-600">📸 ภาพถ่ายที่ 2</label>
-        <input type="file" id="file2" accept="image/*" capture="camera" class="text-xs w-full mt-2">
-        <div id="pre2" class="hidden mt-3 rounded-lg overflow-hidden border-2 border-white shadow-md"><img id="img2" class="w-full"></div>
+        <input type="file" id="file2" accept="image/*,image/heic,image/heif" class="text-xs w-full mt-2">
+        <div id="pre2" class="hidden mt-3 rounded-lg overflow-hidden border-2 border-white shadow-md">
+          <img id="img2" class="w-full" src="">
+        </div>
       </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div>
         <label class="field-label">📍 พิกัด Latitude, Longitude</label>
-        <input type="text" name="location" id="location" class="input-box bg-gray-100 text-xs italic" readonly placeholder="กำลังจับสัญญาณ GPS...">
+        <div class="flex gap-2">
+          <input type="text" name="location" id="location" class="input-box bg-gray-100 text-xs italic flex-1" readonly placeholder="กำลังจับสัญญาณ GPS...">
+          <button type="button" onclick="fetchLocation()" class="bg-blue-500 text-white px-3 rounded-xl shadow-md hover:bg-blue-600 transition" title="อัปเดตพิกัดใหม่">🔄</button>
+        </div>
       </div>
       <div>
         <label class="field-label">👷 ชื่อผู้บันทึก</label>
-        <input type="text" name="recorder" class="input-box" placeholder="ระบุชื่อพนักงาน" required>
+        <input type="text" name="recorder" id="recorder" class="input-box" placeholder="ระบุชื่อพนักงาน" required>
       </div>
     </div>
 
@@ -158,7 +169,7 @@
 
 <script>
   // ** ระบุ URL ของ Google Apps Script Web App ที่นี่ **
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwzZIWthGQWX5lKBfhivcYCHqiPuMxMZgUcU5ajLZGWm3kFIAWuRf0TX_5L-iCsDzo/exec";
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwkRi5JS10K5hQBKCft2HKCChPnxXpiK_rvIwlDfa1LDONjCM-O3hK03LtwI-iqdx96/exec";
 
   const subTypes = {
     "สายทองแดง": ["CU", "Dropwire", "Coaxial"],
@@ -172,27 +183,67 @@
     if (main) subTypes[main].forEach(t => sub.innerHTML += `<option value="${t}">${t}</option>`);
   }
 
+  function fetchLocation() {
+    const locInput = document.getElementById('location');
+    locInput.value = "กำลังจับสัญญาณ GPS...";
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        p => { 
+          // แก้ไขให้เก็บทศนิยมไม่เกิน 7 ตำแหน่ง
+          const lat = p.coords.latitude.toFixed(7);
+          const lng = p.coords.longitude.toFixed(7);
+          locInput.value = `${lat}, ${lng}`; 
+        },
+        err => { locInput.value = "ดึงพิกัดไม่สำเร็จ"; },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      );
+    } else {
+      locInput.value = "ไม่รองรับ GPS";
+    }
+  }
+
   window.onload = () => {
     document.getElementById('subdistrict').value = localStorage.getItem('lastSub') || "";
-    document.getElementsByName('route')[0].value = localStorage.getItem('lastRoute') || "";
-    document.getElementsByName('recorder')[0].value = localStorage.getItem('lastRec') || "";
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(p => {
-        document.getElementById('location').value = `${p.coords.latitude}, ${p.coords.longitude}`;
-      }, null, {enableHighAccuracy: true});
-    }
+    document.getElementById('route').value = localStorage.getItem('lastRoute') || "";
+    document.getElementById('recorder').value = localStorage.getItem('lastRec') || "";
+    fetchLocation();
   };
 
-  function processImg(fileInput, imgDisplay, container) {
-    fileInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
+  async function processImg(fileInput, imgDisplay, container) {
+    fileInput.addEventListener('change', async function(e) {
+      let file = e.target.files[0];
       if (!file) return;
+      
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = "⌛ กำลังเตรียมรูปภาพ...";
+
+      const fileName = file.name.toLowerCase();
+      if (fileName.endsWith(".heic") || fileName.endsWith(".heif")) {
+        try {
+          submitBtn.innerHTML = "⌛ กำลังแปลงไฟล์ HEIC...";
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: "image/jpeg",
+            quality: 0.7
+          });
+          file = new File([convertedBlob], fileName.replace(/\.[^/.]+$/, "") + ".jpg", { type: "image/jpeg" });
+        } catch (err) {
+          console.error("HEIC conversion failed:", err);
+          alert("ไม่สามารถแปลงไฟล์ HEIC ได้ กรุณาลองใหม่อีกครั้ง");
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = "🚀 บันทึกข้อมูล";
+          return;
+        }
+      }
+      
       const reader = new FileReader();
       reader.onload = function(ev) {
         const img = new Image();
         img.onload = function() {
           const canvas = document.getElementById('canvas');
           const ctx = canvas.getContext('2d');
+          
           const scale = Math.min(1200 / img.width, 1);
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
@@ -204,12 +255,19 @@
           ctx.fillStyle = "#ffffff";
           ctx.font = `bold ${fontSize}px Sarabun`;
           
-          ctx.fillText(`📅 ${new Date().toLocaleString('th-TH')}`, 25, canvas.height - (fontSize * 3.3));
-          ctx.fillText(`📍 ${document.getElementById('location').value}`, 25, canvas.height - (fontSize * 1.9));
-          ctx.fillText(`🛣️ ${document.getElementsByName('route')[0].value}`, 25, canvas.height - (fontSize * 0.7));
+          const timestamp = new Date().toLocaleString('th-TH');
+          const locationText = document.getElementById('location').value;
+          const routeText = document.getElementById('route').value;
           
-          imgDisplay.src = canvas.toDataURL('image/jpeg', 0.8);
+          ctx.fillText(`📅 ${timestamp}`, 25, canvas.height - (fontSize * 3.3));
+          ctx.fillText(`📍 ${locationText}`, 25, canvas.height - (fontSize * 1.9));
+          ctx.fillText(`🛣️ ${routeText}`, 25, canvas.height - (fontSize * 0.7));
+          
+          imgDisplay.src = canvas.toDataURL('image/jpeg', 0.75);
           container.classList.remove('hidden');
+          
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = "🚀 บันทึกข้อมูล";
         };
         img.src = ev.target.result;
       };
@@ -220,64 +278,75 @@
   processImg(document.getElementById('file1'), document.getElementById('img1'), document.getElementById('pre1'));
   processImg(document.getElementById('file2'), document.getElementById('img2'), document.getElementById('pre2'));
 
-  document.getElementById('inspectionForm').addEventListener('submit', async function(e) {
+  document.getElementById('inspectionForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
+    
+    const img1Src = document.getElementById('img1').getAttribute('src');
+    if (!img1Src || img1Src === "" || !img1Src.startsWith('data:image')) {
+      alert("⚠️ รูปภาพที่ 1 ยังไม่พร้อม กรุณาเลือกรูปภาพใหม่");
+      return;
+    }
+
     btn.disabled = true;
-    btn.innerHTML = "⌛ กำลังบันทึกข้อมูล...";
+    btn.innerHTML = "⌛ กำลังส่งข้อมูล...";
 
     const formData = {
       subdistrict: document.getElementById('subdistrict').value,
-      route: this.route.value,
+      route: document.getElementById('route').value,
       poleId: document.getElementById('poleId').value,
-      owner: this.owner.value,
+      owner: document.getElementById('owner').value,
       cableMainType: document.getElementById('cableMainType').value,
       cableSubType: document.getElementById('cableSubType').value,
-      diameter: this.diameter.value,
-      quantity: this.quantity.value,
-      coreCount: this.coreCount.value,
+      diameter: document.getElementById('diameter').value,
+      quantity: document.getElementById('quantity').value,
+      coreCount: document.getElementById('coreCount').value,
       location: document.getElementById('location').value,
-      recorder: this.recorder.value,
-      image1: document.getElementById('img1').src,
-      image2: document.getElementById('img2').src
+      recorder: document.getElementById('recorder').value,
+      image1: img1Src,
+      image2: document.getElementById('img2').getAttribute('src') || ""
     };
 
     localStorage.setItem('lastSub', formData.subdistrict);
     localStorage.setItem('lastRoute', formData.route);
     localStorage.setItem('lastRec', formData.recorder);
 
-    try {
-      // ส่งข้อมูลไปยัง Web App URL โดยใช้ fetch API
-      const response = await fetch(WEB_APP_URL, {
-        method: 'POST',
-        mode: 'no-cors', // สำคัญ: เพื่อข้ามปัญหา CORS เมื่อส่งจาก GitHub
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      // เนื่องจากใช้ no-cors เราจะไม่สามารถอ่าน JSON ผลลัพธ์ได้ตรงๆ 
-      // แต่ข้อมูลจะถูกส่งไปประมวลผลที่ Apps Script แน่นอน
-      alert("✅ บันทึกข้อมูลเรียบร้อยแล้ว!");
-      
-      // ล้างค่าฟอร์มบางส่วน
-      document.getElementById('poleId').value = "";
-      document.getElementById('pre1').classList.add('hidden');
-      document.getElementById('pre2').classList.add('hidden');
-      document.getElementById('file1').value = "";
-      document.getElementById('file2').value = "";
-      btn.disabled = false;
-      btn.innerHTML = "🚀 บันทึกต้นถัดไป";
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    } catch (error) {
-      console.error("Error:", error);
-      alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อกรุณาตรวจสอบ URL ของคุณ");
-      btn.disabled = false;
-      btn.innerHTML = "🚀 บันทึกข้อมูล";
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(() => {
+          alert("✅ บันทึกข้อมูลเรียบร้อยแล้ว!");
+          resetForm(btn);
+        })
+        .withFailureHandler((err) => {
+          alert("❌ ไม่สามารถบันทึกได้: " + err);
+          btn.disabled = false;
+          btn.innerHTML = "🚀 ลองบันทึกอีกครั้ง";
+        })
+        .processForm(formData);
+    } else {
+      console.log("Submit Data:", formData);
+      setTimeout(() => {
+        alert("✅ โหมดทดสอบ: บันทึกข้อมูลสำเร็จ");
+        resetForm(btn);
+      }, 1000);
     }
   });
+
+  function resetForm(btn) {
+    document.getElementById('poleId').value = "";
+    document.getElementById('pre1').classList.add('hidden');
+    document.getElementById('pre2').classList.add('hidden');
+    document.getElementById('img1').src = "";
+    document.getElementById('img2').src = "";
+    document.getElementById('file1').value = "";
+    document.getElementById('file2').value = "";
+    fetchLocation();
+    btn.disabled = false;
+    btn.innerHTML = "🚀 บันทึกต้นถัดไป";
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 </script>
+</body>
+</html>
 </body>
 </html>
