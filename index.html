@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PEA Buachet - Communication Inspection</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- เพิ่ม Library สำหรับแปลงไฟล์ HEIC จาก iPhone -->
+  <!-- Library สำหรับแปลงไฟล์ HEIC จาก iPhone -->
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -62,11 +62,12 @@
 <div class="glass-card max-w-2xl mx-auto p-6 md:p-10">
   <header class="text-center mb-8">
     <h1 class="text-2xl font-black text-gray-800 tracking-tight">📝  ระบบจัดเก็บข้อมูลสายสื่อสาร</h1>
-    <p class="text-blue-500 font-bold text-sm">บันทึกข้อมูลและภาพถ่ายพร้อมพิกัด</p>
+    <p class="text-blue-500 font-bold text-sm">GitHub Version (PEA Buachet)</p>
   </header>
 
   <form id="inspectionForm" class="space-y-5">
     
+    <!-- ส่วนข้อมูลพื้นฐาน -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div>
         <label class="field-label">🏘️ ตำบล</label>
@@ -125,10 +126,10 @@
       </div>
     </div>
 
+    <!-- ส่วนรูปภาพ -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
       <div class="p-4 rainbow-border rounded-2xl text-center">
         <label class="field-label text-purple-600">📸 ภาพถ่ายที่ 1</label>
-        <!-- เพิ่ม accept ให้ครอบคลุม heic -->
         <input type="file" id="file1" accept="image/*,image/heic,image/heif" class="text-xs w-full mt-2" required>
         <div id="pre1" class="hidden mt-3 rounded-lg overflow-hidden border-2 border-white shadow-md">
           <img id="img1" class="w-full" src="">
@@ -143,6 +144,7 @@
       </div>
     </div>
 
+    <!-- ส่วนพิกัดและผู้บันทึก -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div>
         <label class="field-label">📍 พิกัด Latitude, Longitude</label>
@@ -162,14 +164,14 @@
   
   <canvas id="canvas" class="hidden"></canvas>
 
-<footer class="mt-8 text-center text-[10px] font-bold text-gray-400">
+  <footer class="mt-8 text-center text-[10px] font-bold text-gray-400">
     ⚡️ Design & System by PEA Buachet ⚡️
   </footer>
 </div>
 
 <script>
-  // ** ระบุ URL ของ Google Apps Script Web App ที่นี่ **
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx5NGYdZIsYWfAMH95pjeiUweiT8C8QG9AaBfnYyMmjKmNmbTyWh5vR7cIJYBx--CQ7/exec";
+  // คัดลอก Web App URL (Script URL) จาก Google Apps Script ที่ Deploy ไว้มาวางที่นี่
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzESnlwMe9dr9X1lixtEYd1KFgbH8v2nyNBckWf47fUuZoz5v_M51E8c3PeQC9kpAI/exec"; // <-- แก้ไขตรงนี้
 
   const subTypes = {
     "สายทองแดง": ["CU", "Dropwire", "Coaxial"],
@@ -189,7 +191,6 @@
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         p => { 
-          // แก้ไขให้เก็บทศนิยมไม่เกิน 7 ตำแหน่ง
           const lat = p.coords.latitude.toFixed(7);
           const lng = p.coords.longitude.toFixed(7);
           locInput.value = `${lat}, ${lng}`; 
@@ -230,7 +231,7 @@
           file = new File([convertedBlob], fileName.replace(/\.[^/.]+$/, "") + ".jpg", { type: "image/jpeg" });
         } catch (err) {
           console.error("HEIC conversion failed:", err);
-          alert("ไม่สามารถแปลงไฟล์ HEIC ได้ กรุณาลองใหม่อีกครั้ง");
+          alert("ไม่สามารถแปลงไฟล์ HEIC ได้");
           submitBtn.disabled = false;
           submitBtn.innerHTML = "🚀 บันทึกข้อมูล";
           return;
@@ -278,7 +279,7 @@
   processImg(document.getElementById('file1'), document.getElementById('img1'), document.getElementById('pre1'));
   processImg(document.getElementById('file2'), document.getElementById('img2'), document.getElementById('pre2'));
 
-  document.getElementById('inspectionForm').addEventListener('submit', function(e) {
+  document.getElementById('inspectionForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     
@@ -311,24 +312,22 @@
     localStorage.setItem('lastRoute', formData.route);
     localStorage.setItem('lastRec', formData.recorder);
 
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-      google.script.run
-        .withSuccessHandler(() => {
-          alert("✅ บันทึกข้อมูลเรียบร้อยแล้ว!");
-          resetForm(btn);
-        })
-        .withFailureHandler((err) => {
-          alert("❌ ไม่สามารถบันทึกได้: " + err);
-          btn.disabled = false;
-          btn.innerHTML = "🚀 ลองบันทึกอีกครั้ง";
-        })
-        .processForm(formData);
-    } else {
-      console.log("Submit Data:", formData);
-      setTimeout(() => {
-        alert("✅ โหมดทดสอบ: บันทึกข้อมูลสำเร็จ");
-        resetForm(btn);
-      }, 1000);
+    // การส่งข้อมูลไปยัง Google Apps Script Web App จากภายนอก
+    try {
+      const response = await fetch(WEB_APP_URL, {
+        method: "POST",
+        mode: "no-cors", // จำเป็นต้องใช้ no-cors สำหรับ Google Apps Script
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+
+      // เนื่องจาก no-cors จะไม่สามารถอ่านค่า response ได้ เราจะถือว่าถ้าไม่ Error คือสำเร็จ
+      alert("✅ ส่งข้อมูลเรียบร้อยแล้ว! (กำลังรอระบบประมวลผลบน Cloud)");
+      resetForm(btn);
+    } catch (err) {
+      alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล: " + err);
+      btn.disabled = false;
+      btn.innerHTML = "🚀 ลองบันทึกอีกครั้ง";
     }
   });
 
@@ -346,7 +345,5 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 </script>
-</body>
-</html>
 </body>
 </html>
